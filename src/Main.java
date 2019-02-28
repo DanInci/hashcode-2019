@@ -1,4 +1,5 @@
 import model.Photo;
+import model.Transition;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -8,11 +9,14 @@ import java.util.*;
 
 public class Main {
 
-    private static List<Photo> horizontalPhotos = new ArrayList<Photo>();
+    private static List<Photo> horizontalPhotos;
     private static int horizontalPhotosNo;
 
-    private static List<Photo> verticalPhotos = new ArrayList<Photo>();
+    private static List<Photo> verticalPhotos;
     private static int verticalPhotosNo;
+
+    private static List<Transition> transitions = new ArrayList<>();
+    private static int transitionsNo;
 
 
     public static void main(String[] args) throws IOException {
@@ -21,10 +25,28 @@ public class Main {
             System.exit(1);
         }
         for(String arg: args) {
-            readInput(arg);
-            groupVerticalIntoHorizontal();
-            optimze();
-            writeOutput(arg);
+            int score = 0;
+            while(score < 174900) {
+                horizontalPhotos = new ArrayList<Photo>();
+                horizontalPhotosNo = 0;
+                verticalPhotos =  new ArrayList<Photo>();
+                verticalPhotosNo = 0;
+                transitions = new ArrayList<>();
+                transitionsNo = 0;
+                System.out.println("Reading input " + arg + " ...");
+                readInput(arg);
+                System.out.println("Read completed");
+                groupVerticalIntoHorizontal();
+                System.out.println("Vertical photos group completed");
+                groupHorizontalIntoTransitions();
+                Collections.sort(transitions);
+                System.out.println("Optimized slide presentation");
+                writeTransitionOutput(arg);
+                System.out.println("Write completed");
+                score = calculateScore();
+                System.out.println("Estimated score: " + score);
+            }
+
         }
     }
 
@@ -46,12 +68,9 @@ public class Main {
                 Photo photo = new Photo(String.valueOf(i), tagsNo, tags);
                 horizontalPhotosNo++;
                 horizontalPhotos.add(photo);
-                System.out.println("Read horizontal: " + photo);
-            } else {
+            } else if (orientation.equals("V")){
                 Photo photo = new Photo(String.valueOf(i), tagsNo, tags);
                 verticalPhotos.add(photo);
-                System.out.println("Read vertical: " + photo);
-
             }
 
         }
@@ -77,28 +96,41 @@ public class Main {
         }
     }
 
-    private static void optimze() {
-        for (int i = 0; i < horizontalPhotosNo - 1; i++) {
-            Photo currentPhoto = horizontalPhotos.get(i);
-            int maxPhotoIndex = i+1;
-            int maxScore = currentPhoto.compareTo(horizontalPhotos.get(i+1));
-
-            for (int j = i + 2; j < horizontalPhotosNo; j++) {
-                int score = currentPhoto.compareTo(horizontalPhotos.get(j));
-                if (score > maxScore) {
-                    maxScore = score;
-                    maxPhotoIndex = j;
-                }
-            }
-
-            if(maxPhotoIndex != i+1) {
-                Photo aux = horizontalPhotos.get(i+1);
-                Photo maxPhoto = horizontalPhotos.get(maxPhotoIndex);
-                horizontalPhotos.set(i+1, maxPhoto);
-                horizontalPhotos.set(maxPhotoIndex, aux);
-            }
+    private static void groupHorizontalIntoTransitions() {
+        transitionsNo = horizontalPhotosNo % 2 == 0 ? horizontalPhotosNo : horizontalPhotosNo - 1;
+        int i = 0;
+        Collections.shuffle(horizontalPhotos);
+        while (i < transitionsNo) {
+            Photo firstPhoto = horizontalPhotos.get(i);
+            Photo secondPhoto = horizontalPhotos.get(i + 1);
+            transitions.add(new Transition(firstPhoto, secondPhoto));
+            i += 2;
         }
     }
+
+//    private static void optimize() {
+//        for (int i = 0; i < horizontalPhotosNo - 1; i++) {
+//            System.out.println("Finding match for photo " + i + " ...");
+//            Photo currentPhoto = horizontalPhotos.get(i);
+//            int maxPhotoIndex = i+1;
+//            int maxScore = currentPhoto.compareTo(horizontalPhotos.get(i+1));
+//
+//            for (int j = i + 2; j < horizontalPhotosNo; j++) {
+//                int score = currentPhoto.compareTo(horizontalPhotos.get(j));
+//                if (score > maxScore) {
+//                    maxScore = score;
+//                    maxPhotoIndex = j;
+//                }
+//            }
+//
+//            if(maxPhotoIndex != i+1) {
+//                Photo aux = horizontalPhotos.get(i+1);
+//                Photo maxPhoto = horizontalPhotos.get(maxPhotoIndex);
+//                horizontalPhotos.set(i+1, maxPhoto);
+//                horizontalPhotos.set(maxPhotoIndex, aux);
+//            }
+//        }
+//    }
 
     private static void writeOutput(String fileName) throws IOException {
         File file = new File("output/" + fileName);
@@ -108,6 +140,24 @@ public class Main {
             bf.write(photo.getId() + "\n");
         }
         bf.close();
-        System.out.println("Write completed");
+    }
+
+    private static void writeTransitionOutput(String fileName) throws IOException {
+        File file = new File("output/" + fileName);
+        BufferedWriter bf = new BufferedWriter(new FileWriter(file));
+        bf.write(transitionsNo + "\n");
+        for(Transition transition : transitions) {
+            bf.write(transition.getP1().getId() + "\n");
+            bf.write(transition.getP2().getId() + "\n");
+        }
+        bf.close();
+    }
+
+    private static int calculateScore() throws IOException {
+        int score = 0;
+        for(int i=0;i<horizontalPhotosNo-1;i++) {
+            score += horizontalPhotos.get(i).compareTo(horizontalPhotos.get(i+1));
+        }
+        return score;
     }
 }
