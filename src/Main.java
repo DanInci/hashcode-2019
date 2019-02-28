@@ -1,10 +1,11 @@
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+//import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import model.Photo;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Scanner;
 
@@ -21,8 +22,32 @@ public class Main {
         }
         for(String arg: args) {
             readInput(arg);
-            writeOutput(arg);
+            test();
+            //writeOutput(arg);
         }
+    }
+    
+    private static void test() {
+    	for (int i = 0; i < photoNo - 1; i++) {
+    		int maxPhoto = i;
+    		int maxScore = photos[i].compareTo(photos[i + 1]);
+    		int score;
+    		
+    		for (int j = i + 2; j < photoNo; j++) {
+    			score = photos[i].compareTo(photos[j]);
+    			if (score > maxScore) { 
+    				maxScore = score;
+    				maxPhoto = j;
+    			}
+    		}
+    		
+    		Photo p = photos[i + 1];
+    		photos[i + 1] = photos[maxPhoto];
+    		photos[maxPhoto] = p;
+    	}
+    	
+    	for (Photo p : photos) 
+    		System.out.println(p);
     }
 
     private static void readInput(String fileName) throws IOException {
@@ -43,6 +68,8 @@ public class Main {
             photos[i] = new Photo(i, orientation, tagsNo, tags);
             System.out.println("Read: " + photos[i]);
         }
+        
+        scanner.close();
     }
 
     private static void writeOutput(String fileName) throws IOException {
